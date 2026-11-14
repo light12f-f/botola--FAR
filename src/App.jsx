@@ -9,7 +9,8 @@ import {
   BarChart3,
   Shield,
   Globe,
-  Menu
+  Menu,
+  LogOut
 } from 'lucide-react'
 
 import { supabase } from './supabase.js'
@@ -85,6 +86,116 @@ export default function App() {
   const [matches, setMatches] = useState([])
   const [loadingData, setLoadingData] = useState(false)
 
+  // Admin authentication
+  const [session, setSession] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+  const [adminAllowed, setAdminAllowed] = useState(false)
+
+  const [adminEmail, setAdminEmail] = useState('')
+  const [adminPassword, setAdminPassword] = useState('')
+  const [authMessage, setAuthMessage] = useState('')
+  const [authSaving, setAuthSaving] = useState(false)
+
+  // Check admin permissions
+  useEffect(() => {
+    let alive = true
+
+    async function checkAccess(currentSession) {
+      if (!alive) return
+
+      setSession(currentSession)
+      setAdminAllowed(false)
+
+      if (!currentSession) {
+        setAuthLoading(false)
+        setAuthMessage('')
+        return
+      }
+
+      setAuthLoading(true)
+
+      const { data, error } = await supabase.rpc('is_admin')
+
+      if (!alive) return
+
+      if (error) {
+        setAuthMessage(error.message)
+        setAdminAllowed(false)
+      } else if (data === true) {
+        setAdminAllowed(true)
+        setAuthMessage('')
+      } else {
+        setAdminAllowed(false)
+        setAuthMessage('هذا الحساب ليس لديه صلاحية المسؤول')
+      }
+
+      setAuthLoading(false)
+    }
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      Promise.resolve().then(() => checkAccess(newSession))
+    })
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!alive) return
+
+      if (error) {
+        setAuthMessage(error.message)
+        setAuthLoading(false)
+        return
+      }
+
+      checkAccess(data.session)
+    })
+
+    return () => {
+      alive = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  // Admin login
+  async function adminLogin(event) {
+    event.preventDefault()
+
+    setAuthSaving(true)
+    setAuthMessage('')
+
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: adminEmail.trim(),
+        password: adminPassword
+      })
+
+      if (error) throw error
+
+      setAdminPassword('')
+
+    } catch (error) {
+      setAuthMessage(error.message || 'فشل تسجيل الدخول')
+    } finally {
+      setAuthSaving(false)
+    }
+  }
+
+  // Admin logout
+  async function adminLogout() {
+    const { error } = await supabase.auth.signOut()
+
+    if (error) {
+      setAuthMessage(error.message)
+      return
+    }
+
+    setAdminAllowed(false)
+    setSession(null)
+    setActive('home')
+    setAuthMessage('')
+  }
+
+  // Load public data
   async function loadPublicData() {
 
     setLoadingData(true)
@@ -144,7 +255,7 @@ export default function App() {
     return teams.find(team => String(team.id) === String(id))?.name || '—'
   }
 
-  // حساب الترتيب تلقائياً من المباريات المنتهية
+  // Calculate standings automatically
   const standings = teams.map(team => {
 
     const stats = {
@@ -545,6 +656,8 @@ export default function App() {
 
           </div>
 
+          {/* HOME */}
+
           {active === 'home' && (
 
             <div className="dashboard">
@@ -621,111 +734,112 @@ export default function App() {
 
           )}
 
+          {/* ADMIN */}
+
           {active === 'admin' && (
 
             <div className="dashboard">
-              <div className="admin-page">
-                <AdminDashboard lang={lang} />
-              </div>
-            </div>
 
-          )}
+              {authLoading ? (
 
-          {active === 'teams' && (
+                <section className="panel empty-state">
+                  جاري التحقق من صلاحيات المسؤول...
+                </section>
 
-            <section className="panel page-panel">
+              ) : !session ? (
 
-              <div className="panel-heading">
-                <Shield size={19} />
-                <h3>{t.teams}</h3>
-              </div>
+                <section className="panel" style={{
+                  maxWidth: '450px',
+                  margin: '30px auto',
+                  padding: '25px'
+                }}>
 
-              {loadingData
-                ? <div className="empty-state">{t.loading}</div>
-                : renderTeams()
-              }
+                  <div className="panel-heading">
+                    <Shield size={22} />
+                    <h3>تسجيل دخول المسؤول</h3>
+                  </div>
 
-            </section>
+                  <form
+                    onSubmit={adminLogin}
+                    style={{
+                      display: 'grid',
+                      gap: '18px',
+                      marginTop: '20px'
+                    }}
+                  >
 
-          )}
+                    <label className="admin-field">
+                      <span>البريد الإلكتروني</span>
 
-          {active === 'matches' && (
+                      <input
+                        type="email"
+                        value={adminEmail}
+                        onChange={e => setAdminEmail(e.target.value)}
+                        placeholder="البريد الإلكتروني"
+                        autoComplete="username"
+                        required
+                      />
+                    </label>
 
-            <section className="panel page-panel">
+                    <label className="admin-field">
+                      <span>كلمة المرور</span>
 
-              <div className="panel-heading">
-                <CalendarDays size={19} />
-                <h3>{t.matches}</h3>
-              </div>
+                      <input
+                        type="password"
+                        value={adminPassword}
+                        onChange={e => setAdminPassword(e.target.value)}
+                        placeholder="كلمة المرور"
+                        autoComplete="current-password"
+                        required
+                      />
+                    </label>
 
-              {loadingData
-                ? <div className="empty-state">{t.loading}</div>
-                : renderMatches(matches)
-              }
+                    {authMessage && (
+                      <div className="admin-message">
+                        {authMessage}
+                      </div>
+                    )}
 
-            </section>
+                    <button
+                      type="submit"
+                      className="admin-primary"
+                      disabled={authSaving}
+                    >
+                      {authSaving ? 'جاري الدخول...' : 'تسجيل الدخول'}
+                    </button>
 
-          )}
+                  </form>
 
-          {active === 'standings' && (
+                </section>
 
-            <section className="panel page-panel">
+              ) : !adminAllowed ? (
 
-              <div className="panel-heading">
-                <Trophy size={19} />
-                <h3>{t.standings}</h3>
-              </div>
+                <section className="panel" style={{
+                  padding: '25px',
+                  textAlign: 'center'
+                }}>
 
-              {loadingData
-                ? <div className="empty-state">{t.loading}</div>
-                : renderStandings(false)
-              }
+                  <Shield size={35} />
 
-            </section>
+                  <h3>ليس لديك صلاحية المسؤول</h3>
 
-          )}
+                  <p>{authMessage}</p>
 
-          {active === 'players' && (
+                  <button
+                    className="admin-primary"
+                    onClick={adminLogout}
+                  >
+                    <LogOut size={17} />
+                    تسجيل الخروج
+                  </button>
 
-            <section className="panel page-panel">
+                </section>
 
-              <div className="panel-heading">
-                <Users size={19} />
-                <h3>{t.players}</h3>
-              </div>
+              ) : (
 
-              <div className="empty-state">{t.empty}</div>
+                <>
 
-            </section>
-
-          )}
-
-          {active === 'stats' && (
-
-            <section className="panel page-panel">
-
-              <div className="panel-heading">
-                <BarChart3 size={19} />
-                <h3>{t.stats}</h3>
-              </div>
-
-              <div className="empty-state">{t.empty}</div>
-
-            </section>
-
-          )}
-
-          <footer className="footer">
-            BOTOLA FAR — Football Management Platform
-          </footer>
-
-        </main>
-
-      </div>
-
-    </div>
-
-  )
-
-        }
-    
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+      
