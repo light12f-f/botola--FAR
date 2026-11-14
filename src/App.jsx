@@ -5,6 +5,8 @@ import {
   BarChart3, Shield, Globe, Menu
 } from 'lucide-react'
 
+import ConnectionTest from './ConnectionTest'
+
 const translations = {
   ar: {
     home: 'الرئيسية',
@@ -20,7 +22,9 @@ const translations = {
     empty: 'لا توجد بيانات حالياً',
     upcoming: 'المباريات القادمة',
     latest: 'آخر النتائج',
-    language: 'Français'
+    language: 'Français',
+    connection: 'اختبار الاتصال بقاعدة البيانات',
+    connectionDescription: 'التحقق من اتصال المنصة بقاعدة بيانات Supabase.'
   },
   fr: {
     home: 'Accueil',
@@ -36,7 +40,9 @@ const translations = {
     empty: 'Aucune donnée disponible',
     upcoming: 'Prochains matchs',
     latest: 'Derniers résultats',
-    language: 'العربية'
+    language: 'العربية',
+    connection: 'Test de connexion à la base de données',
+    connectionDescription: 'Vérifier la connexion à Supabase.'
   }
 }
 
@@ -78,7 +84,10 @@ export default function App() {
           </div>
         </div>
 
-        <button className="language-button" onClick={() => setLang(lang === 'ar' ? 'fr' : 'ar')}>
+        <button
+          className="language-button"
+          onClick={() => setLang(lang === 'ar' ? 'fr' : 'ar')}
+        >
           <Globe size={18} />
           {t.language}
         </button>
@@ -92,6 +101,7 @@ export default function App() {
 
           {navigation.map(item => {
             const Icon = item.icon
+
             return (
               <button
                 key={item.id}
@@ -123,6 +133,7 @@ export default function App() {
               </h2>
               <p>{t.description}</p>
             </div>
+
             <div className="live-indicator">
               <span></span>
               {lang === 'ar' ? 'البطولة' : 'Tournoi'}
@@ -133,10 +144,13 @@ export default function App() {
             <div className="dashboard">
               <section className="welcome-card">
                 <div className="welcome-content">
-                  <span className="welcome-tag">FOOTBALL TOURNAMENT</span>
+                  <span className="welcome-tag">
+                    FOOTBALL TOURNAMENT
+                  </span>
                   <h2>BOTOLA FAR</h2>
                   <p>{t.description}</p>
                 </div>
+
                 <Trophy className="hero-trophy" size={90} />
               </section>
 
@@ -166,6 +180,19 @@ export default function App() {
                 </section>
               </div>
             </div>
+          ) : active === 'admin' ? (
+            <div className="dashboard">
+              <section className="panel page-panel">
+                <div className="panel-heading">
+                  <Shield size={20} />
+                  <h3>{t.connection}</h3>
+                </div>
+
+                <p>{t.connectionDescription}</p>
+
+                <ConnectionTest />
+              </section>
+            </div>
           ) : (
             <section className="panel page-panel">
               <div className="empty-state">{t.empty}</div>
@@ -179,4 +206,4 @@ export default function App() {
       </div>
     </div>
   )
-                }
+          }
