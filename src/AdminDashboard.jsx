@@ -15,28 +15,47 @@ const sections = [
 
 const emptyForms = {
   teams: { name: '', logo_url: '' },
+
   players: {
-    full_name: '', team_id: '', jersey_number: '',
+    full_name: '',
+    team_id: '',
+    jersey_number: '',
     position: ''
   },
+
   matches: {
-    home_team_id: '', away_team_id: '',
-    home_score: 0, away_score: 0,
-    match_date: '', round_number: 1,
-    leg: '', status: 'scheduled'
+    home_team_id: '',
+    away_team_id: '',
+    home_score: 0,
+    away_score: 0,
+    match_date: '',
+    round_number: 1,
+    leg: 'first',
+    status: 'scheduled'
   },
+
   stats: {
-    player_id: '', appearances: 0, goals: 0,
-    assists: 0, yellow_cards: 0, red_cards: 0
+    player_id: '',
+    appearances: 0,
+    goals: 0,
+    assists: 0,
+    yellow_cards: 0,
+    red_cards: 0
   }
 }
 
 export default function AdminDashboard({ lang = 'ar' }) {
   const ar = lang === 'ar'
+
   const [section, setSection] = useState('teams')
+
   const [data, setData] = useState({
-    teams: [], players: [], matches: [], stats: []
+    teams: [],
+    players: [],
+    matches: [],
+    stats: []
   })
+
   const [form, setForm] = useState(emptyForms.teams)
   const [editing, setEditing] = useState(null)
   const [showForm, setShowForm] = useState(false)
@@ -49,25 +68,29 @@ export default function AdminDashboard({ lang = 'ar' }) {
     players: ar ? 'إدارة اللاعبين' : 'Gestion des joueurs',
     matches: ar ? 'إدارة المباريات' : 'Gestion des matchs',
     stats: ar ? 'إحصائيات اللاعبين' : 'Statistiques des joueurs',
+
     add: ar ? 'إضافة جديد' : 'Ajouter',
     edit: ar ? 'تعديل' : 'Modifier',
     delete: ar ? 'حذف' : 'Supprimer',
     save: ar ? 'حفظ البيانات' : 'Enregistrer',
     cancel: ar ? 'إلغاء' : 'Annuler',
+
     loading: ar ? 'جاري تحميل البيانات...' : 'Chargement...',
     empty: ar ? 'لا توجد بيانات' : 'Aucune donnée',
+
     name: ar ? 'الاسم' : 'Nom',
     logo: ar ? 'رابط الشعار' : 'URL du logo',
     team: ar ? 'الفريق' : 'Équipe',
     number: ar ? 'رقم القميص' : 'Numéro',
     position: ar ? 'المركز' : 'Poste',
+
     home: ar ? 'الفريق المستضيف' : 'Équipe domicile',
     away: ar ? 'الفريق الضيف' : 'Équipe visiteuse',
     date: ar ? 'تاريخ المباراة' : 'Date du match',
     round: ar ? 'رقم الجولة' : 'Journée',
     leg: ar ? 'الدور' : 'Phase',
     status: ar ? 'الحالة' : 'Statut',
-    score: ar ? 'النتيجة' : 'Score',
+
     player: ar ? 'اللاعب' : 'Joueur',
     appearances: ar ? 'المشاركات' : 'Apparitions',
     goals: ar ? 'الأهداف' : 'Buts',
@@ -82,16 +105,21 @@ export default function AdminDashboard({ lang = 'ar' }) {
 
     try {
       const tables = ['teams', 'players', 'matches', 'player_stats']
+
       const results = await Promise.all(
         tables.map(table =>
-          supabase.from(table).select('*').order(
-            table === 'player_stats' ? 'updated_at' : 'created_at',
-            { ascending: false }
-          )
+          supabase
+            .from(table)
+            .select('*')
+            .order(
+              table === 'player_stats' ? 'updated_at' : 'created_at',
+              { ascending: false }
+            )
         )
       )
 
       const failed = results.find(result => result.error)
+
       if (failed) throw failed.error
 
       setData({
@@ -100,6 +128,7 @@ export default function AdminDashboard({ lang = 'ar' }) {
         matches: results[2].data || [],
         stats: results[3].data || []
       })
+
     } catch (error) {
       setMessage(error.message || 'Error loading data')
     } finally {
@@ -120,11 +149,19 @@ export default function AdminDashboard({ lang = 'ar' }) {
 
   function openEdit(item) {
     setEditing(item.id)
+
     const values = { ...emptyForms[section], ...item }
 
-    if (section === 'matches' && values.match_date) {
-      values.match_date = new Date(values.match_date)
-        .toISOString().slice(0, 16)
+    if (section === 'matches') {
+      values.leg = ['first', 'second'].includes(item.leg)
+        ? item.leg
+        : 'first'
+
+      if (values.match_date) {
+        values.match_date = new Date(values.match_date)
+          .toISOString()
+          .slice(0, 16)
+      }
     }
 
     setForm(values)
@@ -133,55 +170,85 @@ export default function AdminDashboard({ lang = 'ar' }) {
   }
 
   function changeField(key, value) {
-    setForm(previous => ({ ...previous, [key]: value }))
+    setForm(previous => ({
+      ...previous,
+      [key]: value
+    }))
   }
 
   async function saveData(event) {
     event.preventDefault()
+
     setSaving(true)
     setMessage('')
 
     try {
-      const table = section === 'stats' ? 'player_stats' : section
+      const table = section === 'stats'
+        ? 'player_stats'
+        : section
+
       const payload = { ...form }
 
       if (section === 'teams') {
-        if (!payload.name.trim()) throw new Error('اسم الفريق مطلوب')
+        if (!payload.name.trim()) {
+          throw new Error('اسم الفريق مطلوب')
+        }
       }
 
       if (section === 'players') {
         if (!payload.full_name.trim() || !payload.team_id) {
           throw new Error('الاسم والفريق مطلوبان')
         }
+
         payload.jersey_number = payload.jersey_number === ''
-          ? null : Number(payload.jersey_number)
+          ? null
+          : Number(payload.jersey_number)
       }
 
       if (section === 'matches') {
         if (!payload.home_team_id || !payload.away_team_id) {
           throw new Error('خاصك تختار الفريقين')
         }
+
         if (payload.home_team_id === payload.away_team_id) {
           throw new Error('لا يمكن اختيار نفس الفريق مرتين')
         }
-        if (!payload.match_date) throw new Error('تاريخ المباراة مطلوب')
+
+        if (!payload.match_date) {
+          throw new Error('تاريخ المباراة مطلوب')
+        }
+
+        if (!['first', 'second'].includes(payload.leg)) {
+          throw new Error('اختار الدور الأول أو الدور الثاني')
+        }
 
         payload.home_score = Number(payload.home_score)
         payload.away_score = Number(payload.away_score)
         payload.round_number = Number(payload.round_number)
-        payload.match_date = new Date(payload.match_date).toISOString()
+
+        payload.match_date = new Date(
+          payload.match_date
+        ).toISOString()
       }
 
       if (section === 'stats') {
-        if (!payload.player_id) throw new Error('اختار اللاعب')
+        if (!payload.player_id) {
+          throw new Error('اختار اللاعب')
+        }
+
         for (const key of [
-          'appearances', 'goals', 'assists',
-          'yellow_cards', 'red_cards'
+          'appearances',
+          'goals',
+          'assists',
+          'yellow_cards',
+          'red_cards'
         ]) {
           payload[key] = Number(payload[key])
         }
+
         delete payload.id
         delete payload.updated_at
+
         payload.updated_at = new Date().toISOString()
       }
 
@@ -192,6 +259,7 @@ export default function AdminDashboard({ lang = 'ar' }) {
           .eq('id', editing)
 
         if (error) throw error
+
       } else {
         const { error } = await supabase
           .from(table)
@@ -202,8 +270,15 @@ export default function AdminDashboard({ lang = 'ar' }) {
 
       setShowForm(false)
       setEditing(null)
+
       await loadData()
-      setMessage(ar ? 'تم حفظ البيانات بنجاح' : 'Enregistré avec succès')
+
+      setMessage(
+        ar
+          ? 'تم حفظ البيانات بنجاح'
+          : 'Enregistré avec succès'
+      )
+
     } catch (error) {
       setMessage(error.message || 'حدث خطأ أثناء الحفظ')
     } finally {
@@ -215,15 +290,27 @@ export default function AdminDashboard({ lang = 'ar' }) {
     const confirmed = window.confirm(
       ar ? 'واش متأكد من الحذف؟' : 'Confirmer la suppression ?'
     )
+
     if (!confirmed) return
 
-    const table = section === 'stats' ? 'player_stats' : section
+    const table = section === 'stats'
+      ? 'player_stats'
+      : section
 
     try {
-      const { error } = await supabase.from(table).delete().eq('id', id)
+      const { error } = await supabase
+        .from(table)
+        .delete()
+        .eq('id', id)
+
       if (error) throw error
+
       await loadData()
-      setMessage(ar ? 'تم الحذف بنجاح' : 'Supprimé avec succès')
+
+      setMessage(
+        ar ? 'تم الحذف بنجاح' : 'Supprimé avec succès'
+      )
+
     } catch (error) {
       setMessage(error.message)
     }
@@ -241,11 +328,16 @@ export default function AdminDashboard({ lang = 'ar' }) {
     return (
       <label className="admin-field" key={key}>
         <span>{label}</span>
+
         <input
           type={type}
           value={form[key] ?? ''}
           onChange={e => changeField(key, e.target.value)}
-          required={['name', 'full_name', 'match_date'].includes(key)}
+          required={[
+            'name',
+            'full_name',
+            'match_date'
+          ].includes(key)}
         />
       </label>
     )
@@ -255,14 +347,19 @@ export default function AdminDashboard({ lang = 'ar' }) {
     return (
       <label className="admin-field" key={key}>
         <span>{label}</span>
+
         <select
           value={form[key] ?? ''}
           onChange={e => changeField(key, e.target.value)}
           required
         >
           <option value="">-- {label} --</option>
+
           {options.map(option => (
-            <option key={option.value} value={option.value}>
+            <option
+              key={option.value}
+              value={option.value}
+            >
               {option.label}
             </option>
           ))}
@@ -282,42 +379,106 @@ export default function AdminDashboard({ lang = 'ar' }) {
     if (section === 'players') {
       return <>
         {input('full_name', labels.name)}
-        {selectField('team_id', labels.team,
-          data.teams.map(t => ({ value: t.id, label: t.name })))}
+
+        {selectField(
+          'team_id',
+          labels.team,
+          data.teams.map(t => ({
+            value: t.id,
+            label: t.name
+          }))
+        )}
+
         {input('jersey_number', labels.number, 'number')}
-        {selectField('position', labels.position,
+
+        {selectField(
+          'position',
+          labels.position,
           ['Goalkeeper', 'Defender', 'Midfielder', 'Forward']
-            .map(v => ({ value: v, label: v })))}
+            .map(v => ({
+              value: v,
+              label: v
+            }))
+        )}
       </>
     }
 
     if (section === 'matches') {
       return <>
-        {selectField('home_team_id', labels.home,
-          data.teams.map(t => ({ value: t.id, label: t.name })))}
-        {selectField('away_team_id', labels.away,
-          data.teams.map(t => ({ value: t.id, label: t.name })))}
+        {selectField(
+          'home_team_id',
+          labels.home,
+          data.teams.map(t => ({
+            value: t.id,
+            label: t.name
+          }))
+        )}
+
+        {selectField(
+          'away_team_id',
+          labels.away,
+          data.teams.map(t => ({
+            value: t.id,
+            label: t.name
+          }))
+        )}
+
         {input('match_date', labels.date, 'datetime-local')}
+
         {input('round_number', labels.round, 'number')}
-        {input('leg', labels.leg)}
-        {selectField('status', labels.status, [
-          { value: 'scheduled', label: ar ? 'قادمة' : 'À venir' },
-          { value: 'live', label: ar ? 'مباشرة' : 'En direct' },
-          { value: 'finished', label: ar ? 'انتهت' : 'Terminée' }
+
+        {selectField('leg', labels.leg, [
+          {
+            value: 'first',
+            label: ar ? 'الدور الأول' : 'Première phase'
+          },
+          {
+            value: 'second',
+            label: ar ? 'الدور الثاني' : 'Deuxième phase'
+          }
         ])}
+
+        {selectField('status', labels.status, [
+          {
+            value: 'scheduled',
+            label: ar ? 'قادمة' : 'À venir'
+          },
+          {
+            value: 'live',
+            label: ar ? 'مباشرة' : 'En direct'
+          },
+          {
+            value: 'finished',
+            label: ar ? 'انتهت' : 'Terminée'
+          }
+        ])}
+
         <div className="admin-score-fields">
-          {input('home_score', ar ? 'أهداف المستضيف' : 'Score domicile', 'number')}
-          {input('away_score', ar ? 'أهداف الضيف' : 'Score visiteur', 'number')}
+          {input(
+            'home_score',
+            ar ? 'أهداف المستضيف' : 'Score domicile',
+            'number'
+          )}
+
+          {input(
+            'away_score',
+            ar ? 'أهداف الضيف' : 'Score visiteur',
+            'number'
+          )}
         </div>
       </>
     }
 
     return <>
-      {selectField('player_id', labels.player,
+      {selectField(
+        'player_id',
+        labels.player,
         data.players.map(p => ({
           value: p.id,
           label: p.full_name
-        })))}
+        }))
+      )}
+
       {input('appearances', labels.appearances, 'number')}
       {input('goals', labels.goals, 'number')}
       {input('assists', labels.assists, 'number')}
@@ -340,14 +501,20 @@ export default function AdminDashboard({ lang = 'ar' }) {
       if (section === 'teams') {
         title = item.name
         details = item.logo_url || '—'
+
       } else if (section === 'players') {
         title = item.full_name
+
         details = `${teamName(item.team_id)} • ${item.position || '—'} • #${item.jersey_number ?? '—'}`
+
       } else if (section === 'matches') {
         title = `${teamName(item.home_team_id)} × ${teamName(item.away_team_id)}`
-        details = `${item.home_score ?? 0} - ${item.away_score ?? 0} • ${item.status}`
+
+        details = `${item.home_score ?? 0} - ${item.away_score ?? 0} • ${item.leg === 'first' ? (ar ? 'الدور الأول' : 'Première phase') : (ar ? 'الدور الثاني' : 'Deuxième phase')} • ${item.status}`
+
       } else {
         title = playerName(item.player_id)
+
         details = `${labels.goals}: ${item.goals} • ${labels.assists}: ${item.assists} • ${labels.appearances}: ${item.appearances}`
       }
 
@@ -359,12 +526,19 @@ export default function AdminDashboard({ lang = 'ar' }) {
           </div>
 
           <div className="admin-record-actions">
-            <button className="admin-icon-button"
-              onClick={() => openEdit(item)} aria-label="Edit">
+            <button
+              className="admin-icon-button"
+              onClick={() => openEdit(item)}
+              aria-label="Edit"
+            >
               <Pencil size={17} />
             </button>
-            <button className="admin-icon-button danger"
-              onClick={() => deleteData(item.id)} aria-label="Delete">
+
+            <button
+              className="admin-icon-button danger"
+              onClick={() => deleteData(item.id)}
+              aria-label="Delete"
+            >
               <Trash2 size={17} />
             </button>
           </div>
@@ -375,13 +549,22 @@ export default function AdminDashboard({ lang = 'ar' }) {
 
   return (
     <div className="admin-dashboard">
+
       <div className="admin-welcome">
         <div>
           <span>BOTOLA FAR</span>
-          <h2>{ar ? 'لوحة تحكم المسؤول' : 'Administration'}</h2>
-          <p>{ar ? 'إدارة محتوى البطولة' : 'Gestion du tournoi'}</p>
+          <h2>
+            {ar ? 'لوحة تحكم المسؤول' : 'Administration'}
+          </h2>
+          <p>
+            {ar ? 'إدارة محتوى البطولة' : 'Gestion du tournoi'}
+          </p>
         </div>
-        <button className="admin-refresh" onClick={loadData}>
+
+        <button
+          className="admin-refresh"
+          onClick={loadData}
+        >
           <RefreshCw size={17} />
         </button>
       </div>
@@ -389,6 +572,7 @@ export default function AdminDashboard({ lang = 'ar' }) {
       <div className="admin-tabs">
         {sections.map(item => {
           const Icon = item.icon
+
           return (
             <button
               key={item.id}
@@ -402,33 +586,55 @@ export default function AdminDashboard({ lang = 'ar' }) {
               }}
             >
               <Icon size={18} />
-              {ar ? item.label : ({
-                teams: 'Équipes',
-                matches: 'Matchs',
-                players: 'Joueurs',
-                stats: 'Statistiques'
-              })[item.id]}
+
+              {ar
+                ? item.label
+                : ({
+                    teams: 'Équipes',
+                    matches: 'Matchs',
+                    players: 'Joueurs',
+                    stats: 'Statistiques'
+                  })[item.id]
+              }
             </button>
           )
         })}
       </div>
 
       <section className="panel admin-content">
+
         <div className="admin-content-heading">
           <h3>{labels[section]}</h3>
-          <button className="admin-primary" onClick={openAdd}>
+
+          <button
+            className="admin-primary"
+            onClick={openAdd}
+          >
             <Plus size={17} />
             {labels.add}
           </button>
         </div>
 
-        {message && <div className="admin-message">{message}</div>}
+        {message && (
+          <div className="admin-message">
+            {message}
+          </div>
+        )}
 
         {showForm && (
-          <form className="admin-form" onSubmit={saveData}>
+          <form
+            className="admin-form"
+            onSubmit={saveData}
+          >
             <div className="admin-form-heading">
-              <strong>{editing ? labels.edit : labels.add}</strong>
-              <button type="button" onClick={() => setShowForm(false)}>
+              <strong>
+                {editing ? labels.edit : labels.add}
+              </strong>
+
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+              >
                 <X size={19} />
               </button>
             </div>
@@ -438,11 +644,19 @@ export default function AdminDashboard({ lang = 'ar' }) {
             </div>
 
             <div className="admin-form-actions">
-              <button type="button" className="admin-secondary"
-                onClick={() => setShowForm(false)}>
+              <button
+                type="button"
+                className="admin-secondary"
+                onClick={() => setShowForm(false)}
+              >
                 {labels.cancel}
               </button>
-              <button type="submit" className="admin-primary" disabled={saving}>
+
+              <button
+                type="submit"
+                className="admin-primary"
+                disabled={saving}
+              >
                 <Save size={17} />
                 {saving ? '...' : labels.save}
               </button>
@@ -451,12 +665,16 @@ export default function AdminDashboard({ lang = 'ar' }) {
         )}
 
         {loading ? (
-          <div className="empty-state">{labels.loading}</div>
+          <div className="empty-state">
+            {labels.loading}
+          </div>
         ) : (
-          <div className="admin-record-list">{renderRows()}</div>
+          <div className="admin-record-list">
+            {renderRows()}
+          </div>
         )}
+
       </section>
     </div>
   )
-            }
-                
+}
