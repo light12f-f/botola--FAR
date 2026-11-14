@@ -13,7 +13,6 @@ import {
 } from 'lucide-react'
 
 import { supabase } from './supabase.js'
-import AdminLogin from './AdminLogin.jsx'
 import AdminDashboard from './AdminDashboard.jsx'
 
 const translations = {
@@ -58,85 +57,10 @@ export default function App() {
   const [active, setActive] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
 
-  const [adminUser, setAdminUser] = useState(null)
-  const [authLoading, setAuthLoading] = useState(true)
-
   const [teams, setTeams] = useState([])
   const [matches, setMatches] = useState([])
   const [loadingData, setLoadingData] = useState(false)
 
-  // ADMIN SESSION
-  useEffect(() => {
-
-    let mounted = true
-
-    async function checkAdminSession() {
-
-      try {
-
-        const { data, error } =
-          await supabase.auth.getSession()
-
-        if (error) throw error
-
-        const session = data.session
-
-        if (session) {
-
-          const { data: isAdmin, error: adminError } =
-            await supabase.rpc('is_admin')
-
-          if (adminError || isAdmin !== true) {
-
-            await supabase.auth.signOut()
-
-          } else if (mounted) {
-
-            setAdminUser(session.user)
-
-          }
-        }
-
-      } catch (error) {
-
-        console.error('Session check error:', error)
-
-      } finally {
-
-        if (mounted) {
-          setAuthLoading(false)
-        }
-
-      }
-    }
-
-    checkAdminSession()
-
-    const { data: listener } =
-      supabase.auth.onAuthStateChange((event, session) => {
-
-        if (!mounted) return
-
-        if (event === 'SIGNED_OUT') {
-          setAdminUser(null)
-        }
-
-        if (event === 'SIGNED_IN' && session) {
-          setAdminUser(session.user)
-        }
-
-      })
-
-    return () => {
-
-      mounted = false
-      listener.subscription.unsubscribe()
-
-    }
-
-  }, [])
-
-  // LOAD PUBLIC DATA
   async function loadPublicData() {
 
     setLoadingData(true)
@@ -193,9 +117,7 @@ export default function App() {
   ]
 
   function teamName(id) {
-
     return teams.find(team => team.id === id)?.name || '—'
-
   }
 
   function renderMatches(list) {
@@ -247,9 +169,7 @@ export default function App() {
       <div className="admin-record" key={team.id}>
 
         <div className="admin-record-info">
-
           <strong>{team.name}</strong>
-
         </div>
 
         {team.logo_url && (
@@ -275,8 +195,6 @@ export default function App() {
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
 
-      {/* HEADER */}
-
       <header className="topbar">
 
         <button
@@ -297,7 +215,6 @@ export default function App() {
             <h1>
               BOTOLA <span>FAR</span>
             </h1>
-
             <p>{t.subtitle}</p>
           </div>
 
@@ -314,8 +231,6 @@ export default function App() {
       </header>
 
       <div className="layout">
-
-        {/* SIDEBAR */}
 
         <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
 
@@ -343,11 +258,8 @@ export default function App() {
                   }
                 }}
               >
-
                 <Icon size={19} />
-
                 <span>{item.label}</span>
-
               </button>
 
             )
@@ -360,14 +272,11 @@ export default function App() {
 
         </aside>
 
-        {/* MAIN CONTENT */}
-
         <main className="main-content">
 
           <div className="page-heading">
 
             <div>
-
               <span className="eyebrow">BOTOLA FAR</span>
 
               <h2>
@@ -379,7 +288,6 @@ export default function App() {
               </h2>
 
               <p>{t.description}</p>
-
             </div>
 
             <div className="live-indicator">
@@ -389,8 +297,6 @@ export default function App() {
 
           </div>
 
-          {/* HOME */}
-
           {active === 'home' && (
 
             <div className="dashboard">
@@ -398,15 +304,12 @@ export default function App() {
               <section className="welcome-card">
 
                 <div className="welcome-content">
-
                   <span className="welcome-tag">
                     FOOTBALL TOURNAMENT
                   </span>
 
                   <h2>BOTOLA FAR</h2>
-
                   <p>{t.description}</p>
-
                 </div>
 
                 <Trophy
@@ -470,60 +373,15 @@ export default function App() {
 
           )}
 
-          {/* ADMIN */}
-
           {active === 'admin' && (
 
             <div className="dashboard">
-
-              {authLoading ? (
-
-                <section className="panel page-panel">
-                  {lang === 'ar'
-                    ? 'جاري التحقق من الجلسة...'
-                    : 'Vérification de session...'}
-                </section>
-
-              ) : adminUser ? (
-
-                <div className="admin-page">
-
-                  <AdminDashboard lang={lang} />
-
-                  <button
-                    className="admin-logout"
-                    onClick={async () => {
-
-                      const { error } =
-                        await supabase.auth.signOut()
-
-                      if (!error) {
-                        setAdminUser(null)
-                      }
-
-                    }}
-                  >
-                    {lang === 'ar'
-                      ? 'تسجيل الخروج'
-                      : 'Déconnexion'}
-                  </button>
-
-                </div>
-
-              ) : (
-
-                <AdminLogin
-                  lang={lang}
-                  onLogin={setAdminUser}
-                />
-
-              )}
-
+              <div className="admin-page">
+                <AdminDashboard lang={lang} />
+              </div>
             </div>
 
           )}
-
-          {/* OTHER PAGES */}
 
           {active === 'teams' && (
 
@@ -570,9 +428,7 @@ export default function App() {
                 <h3>{t.standings}</h3>
               </div>
 
-              <div className="empty-state">
-                {t.empty}
-              </div>
+              <div className="empty-state">{t.empty}</div>
 
             </section>
 
@@ -587,9 +443,7 @@ export default function App() {
                 <h3>{t.players}</h3>
               </div>
 
-              <div className="empty-state">
-                {t.empty}
-              </div>
+              <div className="empty-state">{t.empty}</div>
 
             </section>
 
@@ -604,9 +458,7 @@ export default function App() {
                 <h3>{t.stats}</h3>
               </div>
 
-              <div className="empty-state">
-                {t.empty}
-              </div>
+              <div className="empty-state">{t.empty}</div>
 
             </section>
 
@@ -624,4 +476,4 @@ export default function App() {
 
   )
 
-                    }
+}
