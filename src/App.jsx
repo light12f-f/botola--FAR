@@ -30,7 +30,19 @@ const translations = {
     empty: 'لا توجد بيانات حالياً',
     upcoming: 'المباريات القادمة',
     latest: 'آخر النتائج',
-    language: 'Français'
+    language: 'Français',
+    rank: 'الرتبة',
+    team: 'الفريق',
+    played: 'لعب',
+    wins: 'فاز',
+    draws: 'تعادل',
+    losses: 'خسر',
+    goalsFor: 'له',
+    goalsAgainst: 'عليه',
+    goalDifference: 'الفارق',
+    points: 'النقاط',
+    loading: 'جاري التحميل...',
+    noFinished: 'لا توجد مباريات منتهية بعد'
   },
 
   fr: {
@@ -47,7 +59,19 @@ const translations = {
     empty: 'Aucune donnée disponible',
     upcoming: 'Prochains matchs',
     latest: 'Derniers résultats',
-    language: 'العربية'
+    language: 'العربية',
+    rank: 'Rang',
+    team: 'Équipe',
+    played: 'J',
+    wins: 'V',
+    draws: 'N',
+    losses: 'D',
+    goalsFor: 'BP',
+    goalsAgainst: 'BC',
+    goalDifference: 'Diff.',
+    points: 'Pts',
+    loading: 'Chargement...',
+    noFinished: 'Aucun match terminé'
   }
 }
 
@@ -117,7 +141,231 @@ export default function App() {
   ]
 
   function teamName(id) {
-    return teams.find(team => team.id === id)?.name || '—'
+    return teams.find(team => String(team.id) === String(id))?.name || '—'
+  }
+
+  // حساب الترتيب تلقائياً من المباريات المنتهية
+  const standings = teams.map(team => {
+
+    const stats = {
+      team_id: team.id,
+      name: team.name,
+      logo_url: team.logo_url,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      goals_for: 0,
+      goals_against: 0,
+      goal_difference: 0,
+      points: 0
+    }
+
+    matches
+      .filter(match => match.status === 'finished')
+      .forEach(match => {
+
+        const home = String(match.home_team_id)
+        const away = String(match.away_team_id)
+        const current = String(team.id)
+
+        if (home !== current && away !== current) return
+
+        if (
+          match.home_score == null ||
+          match.away_score == null
+        ) return
+
+        const hs = Number(match.home_score)
+        const as = Number(match.away_score)
+
+        if (!Number.isFinite(hs) || !Number.isFinite(as)) return
+
+        stats.played++
+
+        if (home === current) {
+          stats.goals_for += hs
+          stats.goals_against += as
+        } else {
+          stats.goals_for += as
+          stats.goals_against += hs
+        }
+
+        if (hs === as) {
+
+          stats.draws++
+          stats.points += 1
+
+        } else if (
+
+          (home === current && hs > as) ||
+          (away === current && as > hs)
+
+        ) {
+
+          stats.wins++
+          stats.points += 3
+
+        } else {
+
+          stats.losses++
+
+        }
+
+      })
+
+    stats.goal_difference =
+      stats.goals_for - stats.goals_against
+
+    return stats
+
+  }).sort((a, b) =>
+
+    b.points - a.points ||
+    b.goal_difference - a.goal_difference ||
+    b.goals_for - a.goals_for
+
+  ).map((team, index) => ({
+
+    ...team,
+    rank: index + 1
+
+  }))
+
+  function renderStandings(compact = false) {
+
+    if (!teams.length) {
+      return <div className="empty-state">{t.empty}</div>
+    }
+
+    if (
+      !loadingData &&
+      standings.every(team => team.played === 0)
+    ) {
+      return <div className="empty-state">{t.noFinished}</div>
+    }
+
+    return (
+
+      <div style={{
+        width: '100%',
+        overflowX: 'auto'
+      }}>
+
+        <table style={{
+          width: '100%',
+          minWidth: compact ? '420px' : '650px',
+          borderCollapse: 'collapse',
+          textAlign: 'center'
+        }}>
+
+          <thead>
+
+            <tr style={{
+              borderBottom: '1px solid rgba(255,255,255,0.15)'
+            }}>
+
+              <th style={{ padding: '12px 8px' }}>{t.rank}</th>
+              <th style={{ padding: '12px 8px', textAlign: 'start' }}>{t.team}</th>
+              <th style={{ padding: '12px 8px' }}>{t.played}</th>
+              <th style={{ padding: '12px 8px' }}>{t.wins}</th>
+              <th style={{ padding: '12px 8px' }}>{t.draws}</th>
+              <th style={{ padding: '12px 8px' }}>{t.losses}</th>
+
+              {!compact && (
+                <>
+                  <th style={{ padding: '12px 8px' }}>{t.goalsFor}</th>
+                  <th style={{ padding: '12px 8px' }}>{t.goalsAgainst}</th>
+                  <th style={{ padding: '12px 8px' }}>{t.goalDifference}</th>
+                </>
+              )}
+
+              <th style={{ padding: '12px 8px' }}>{t.points}</th>
+
+            </tr>
+
+          </thead>
+
+          <tbody>
+
+            {standings.map(team => (
+
+              <tr
+                key={team.team_id}
+                style={{
+                  borderBottom: '1px solid rgba(255,255,255,0.08)',
+                  background: team.rank === 1
+                    ? 'rgba(212,175,55,0.10)'
+                    : 'transparent'
+                }}
+              >
+
+                <td style={{ padding: '12px 8px', fontWeight: 'bold' }}>
+                  {team.rank === 1 ? '🥇' : team.rank === 2 ? '🥈' : team.rank === 3 ? '🥉' : team.rank}
+                </td>
+
+                <td style={{
+                  padding: '12px 8px',
+                  textAlign: 'start',
+                  fontWeight: '600',
+                  whiteSpace: 'nowrap'
+                }}>
+
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+
+                    {team.logo_url && (
+                      <img
+                        src={team.logo_url}
+                        alt=""
+                        width="28"
+                        height="28"
+                        style={{ objectFit: 'contain' }}
+                      />
+                    )}
+
+                    {team.name}
+
+                  </div>
+
+                </td>
+
+                <td>{team.played}</td>
+                <td>{team.wins}</td>
+                <td>{team.draws}</td>
+                <td>{team.losses}</td>
+
+                {!compact && (
+                  <>
+                    <td>{team.goals_for}</td>
+                    <td>{team.goals_against}</td>
+                    <td>{team.goal_difference > 0 ? `+${team.goal_difference}` : team.goal_difference}</td>
+                  </>
+                )}
+
+                <td style={{
+                  padding: '12px 8px',
+                  fontWeight: 'bold',
+                  color: '#d4af37'
+                }}>
+                  {team.points}
+                </td>
+
+              </tr>
+
+            ))}
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    )
+
   }
 
   function renderMatches(list) {
@@ -329,8 +577,8 @@ export default function App() {
                   </div>
 
                   {loadingData
-                    ? <div className="empty-state">...</div>
-                    : renderTeams()
+                    ? <div className="empty-state">{t.loading}</div>
+                    : renderStandings(true)
                   }
 
                 </section>
@@ -343,7 +591,7 @@ export default function App() {
                   </div>
 
                   {loadingData
-                    ? <div className="empty-state">...</div>
+                    ? <div className="empty-state">{t.loading}</div>
                     : renderMatches(
                         matches.filter(m => m.status === 'finished')
                       )
@@ -359,7 +607,7 @@ export default function App() {
                   </div>
 
                   {loadingData
-                    ? <div className="empty-state">...</div>
+                    ? <div className="empty-state">{t.loading}</div>
                     : renderMatches(
                         matches.filter(m => m.status === 'scheduled')
                       )
@@ -393,7 +641,7 @@ export default function App() {
               </div>
 
               {loadingData
-                ? <div className="empty-state">...</div>
+                ? <div className="empty-state">{t.loading}</div>
                 : renderTeams()
               }
 
@@ -411,7 +659,7 @@ export default function App() {
               </div>
 
               {loadingData
-                ? <div className="empty-state">...</div>
+                ? <div className="empty-state">{t.loading}</div>
                 : renderMatches(matches)
               }
 
@@ -428,7 +676,10 @@ export default function App() {
                 <h3>{t.standings}</h3>
               </div>
 
-              <div className="empty-state">{t.empty}</div>
+              {loadingData
+                ? <div className="empty-state">{t.loading}</div>
+                : renderStandings(false)
+              }
 
             </section>
 
@@ -476,4 +727,5 @@ export default function App() {
 
   )
 
-}
+        }
+    
