@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 
 import {
   Trophy,
@@ -10,7 +10,8 @@ import {
   Shield,
   Globe,
   Menu,
-  LogOut
+  LogOut,
+  RefreshCw
 } from 'lucide-react'
 
 import { supabase } from './supabase.js'
@@ -43,7 +44,21 @@ const translations = {
     goalDifference: 'الفارق',
     points: 'النقاط',
     loading: 'جاري التحميل...',
-    noFinished: 'لا توجد مباريات منتهية بعد'
+    noFinished: 'لا توجد مباريات منتهية بعد',
+    login: 'تسجيل دخول المسؤول',
+    email: 'البريد الإلكتروني',
+    password: 'كلمة المرور',
+    loginButton: 'تسجيل الدخول',
+    logging: 'جاري الدخول...',
+    logout: 'تسجيل الخروج',
+    noPermission: 'ليس لديك صلاحية المسؤول',
+    checking: 'جاري التحقق من صلاحيات المسؤول...',
+    playersTitle: 'قائمة اللاعبين',
+    playedMatches: 'المباريات',
+    goals: 'الأهداف',
+    assists: 'التمريرات الحاسمة',
+    refresh: 'تحديث البيانات',
+    tournament: 'البطولة'
   },
 
   fr: {
@@ -72,21 +87,37 @@ const translations = {
     goalDifference: 'Diff.',
     points: 'Pts',
     loading: 'Chargement...',
-    noFinished: 'Aucun match terminé'
+    noFinished: 'Aucun match terminé',
+    login: 'Connexion administrateur',
+    email: 'Adresse e-mail',
+    password: 'Mot de passe',
+    loginButton: 'Se connecter',
+    logging: 'Connexion...',
+    logout: 'Déconnexion',
+    noPermission: 'Vous n’avez pas les droits administrateur',
+    checking: 'Vérification des autorisations...',
+    playersTitle: 'Liste des joueurs',
+    playedMatches: 'Matchs',
+    goals: 'Buts',
+    assists: 'Passes décisives',
+    refresh: 'Actualiser',
+    tournament: 'Tournoi'
   }
 }
 
 export default function App() {
-
   const [lang, setLang] = useState('ar')
   const [active, setActive] = useState('home')
   const [menuOpen, setMenuOpen] = useState(false)
 
   const [teams, setTeams] = useState([])
   const [matches, setMatches] = useState([])
-  const [loadingData, setLoadingData] = useState(false)
+  const [players, setPlayers] = useState([])
+  const [playerStats, setPlayerStats] = useState([])
 
-  // Admin authentication
+  const [loadingData, setLoadingData] = useState(false)
+  const [dataError, setDataError] = useState('')
+
   const [session, setSession] = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [adminAllowed, setAdminAllowed] = useState(false)
@@ -96,7 +127,62 @@ export default function App() {
   const [authMessage, setAuthMessage] = useState('')
   const [authSaving, setAuthSaving] = useState(false)
 
-  // Check admin permissions
+  const t = translations[lang]
+
+  const navigation = [
+    { id: 'home', label: t.home, icon: Home },
+    { id: 'standings', label: t.standings, icon: Trophy },
+    { id: 'matches', label: t.matches, icon: CalendarDays },
+    { id: 'players', label: t.players, icon: Users },
+    { id: 'stats', label: t.stats, icon: BarChart3 },
+    { id: 'teams', label: t.teams, icon: Shield },
+    { id: 'admin', label: t.admin, icon: Shield }
+  ]
+
+  // تحميل البيانات العامة
+  const loadPublicData = useCallback(async () => {
+    setLoadingData(true)
+    setDataError('')
+
+    try {
+      const [teamResult, matchResult, playerResult, statsResult] =
+        await Promise.all([
+          supabase.from('teams').select('*'),
+          supabase.from('matches').select('*'),
+          supabase.from('players').select('*'),
+          supabase.from('player_stats').select('*')
+        ])
+
+      const failed = [
+        teamResult,
+        matchResult,
+        playerResult,
+        statsResult
+      ].find(result => result.error)
+
+      if (failed) throw failed.error
+
+      setTeams(teamResult.data || [])
+
+      setMatches(
+        (matchResult.data || []).sort((a, b) =>
+          new Date(a.match_date || 0) -
+          new Date(b.match_date || 0)
+        )
+      )
+
+      setPlayers(playerResult.data || [])
+      setPlayerStats(statsResult.data || [])
+
+    } catch (error) {
+      console.error('Public data error:', error)
+      setDataError(error.message || 'Error loading data')
+    } finally {
+      setLoadingData(false)
+    }
+  }, [])
+
+  // التحقق من صلاحيات المسؤول
   useEffect(() => {
     let alive = true
 
@@ -105,31 +191,39 @@ export default function App() {
 
       setSession(currentSession)
       setAdminAllowed(false)
+      setAuthMessage('')
 
       if (!currentSession) {
         setAuthLoading(false)
-        setAuthMessage('')
         return
       }
 
       setAuthLoading(true)
 
-      const { data, error } = await supabase.rpc('is_admin')
+      try {
+        const { data, error } = await supabase.rpc('is_admin')
 
-      if (!alive) return
+        if (!alive) return
 
-      if (error) {
-        setAuthMessage(error.message)
+        if (error) throw error
+
+        if (data === true) {
+          setAdminAllowed(true)
+          setAuthMessage('')
+        } else {
+          setAdminAllowed(false)
+          setAuthMessage(t.noPermission)
+        }
+
+      } catch (error) {
+        if (!alive) return
+
         setAdminAllowed(false)
-      } else if (data === true) {
-        setAdminAllowed(true)
-        setAuthMessage('')
-      } else {
-        setAdminAllowed(false)
-        setAuthMessage('هذا الحساب ليس لديه صلاحية المسؤول')
+        setAuthMessage(error.message || t.noPermission)
+
+      } finally {
+        if (alive) setAuthLoading(false)
       }
-
-      setAuthLoading(false)
     }
 
     const {
@@ -156,7 +250,12 @@ export default function App() {
     }
   }, [])
 
-  // Admin login
+  // تحميل البيانات عند فتح الموقع
+  useEffect(() => {
+    loadPublicData()
+  }, [loadPublicData])
+
+  // تسجيل دخول المسؤول
   async function adminLogin(event) {
     event.preventDefault()
 
@@ -180,7 +279,7 @@ export default function App() {
     }
   }
 
-  // Admin logout
+  // تسجيل الخروج
   async function adminLogout() {
     const { error } = await supabase.auth.signOut()
 
@@ -195,69 +294,20 @@ export default function App() {
     setAuthMessage('')
   }
 
-  // Load public data
-  async function loadPublicData() {
-
-    setLoadingData(true)
-
-    try {
-
-      const [teamsResult, matchesResult] = await Promise.all([
-
-        supabase
-          .from('teams')
-          .select('*'),
-
-        supabase
-          .from('matches')
-          .select('*')
-          .order('match_date', { ascending: true })
-
-      ])
-
-      if (teamsResult.error) throw teamsResult.error
-      if (matchesResult.error) throw matchesResult.error
-
-      setTeams(teamsResult.data || [])
-      setMatches(matchesResult.data || [])
-
-    } catch (error) {
-
-      console.error('Public data error:', error)
-
-    } finally {
-
-      setLoadingData(false)
-
-    }
-
-  }
-
-  useEffect(() => {
-    loadPublicData()
-  }, [])
-
-  const t = translations[lang]
-
-  const navigation = [
-
-    { id: 'home', label: t.home, icon: Home },
-    { id: 'standings', label: t.standings, icon: Trophy },
-    { id: 'matches', label: t.matches, icon: CalendarDays },
-    { id: 'players', label: t.players, icon: Users },
-    { id: 'stats', label: t.stats, icon: BarChart3 },
-    { id: 'teams', label: t.teams, icon: Shield },
-    { id: 'admin', label: t.admin, icon: Shield }
-
-  ]
-
   function teamName(id) {
-    return teams.find(team => String(team.id) === String(id))?.name || '—'
+    return teams.find(
+      team => String(team.id) === String(id)
+    )?.name || '—'
   }
 
-  // Calculate standings automatically
-  const standings = teams.map(team => {
+  function playerName(id) {
+    return players.find(
+      player => String(player.id) === String(id)
+    )?.full_name || '—'
+  }
 
+  // حساب الترتيب تلقائياً
+  const standings = teams.map(team => {
     const stats = {
       team_id: team.id,
       name: team.name,
@@ -275,7 +325,6 @@ export default function App() {
     matches
       .filter(match => match.status === 'finished')
       .forEach(match => {
-
         const home = String(match.home_team_id)
         const away = String(match.away_team_id)
         const current = String(team.id)
@@ -290,7 +339,10 @@ export default function App() {
         const hs = Number(match.home_score)
         const as = Number(match.away_score)
 
-        if (!Number.isFinite(hs) || !Number.isFinite(as)) return
+        if (
+          !Number.isFinite(hs) ||
+          !Number.isFinite(as)
+        ) return
 
         stats.played++
 
@@ -303,26 +355,17 @@ export default function App() {
         }
 
         if (hs === as) {
-
           stats.draws++
-          stats.points += 1
-
+          stats.points++
         } else if (
-
           (home === current && hs > as) ||
           (away === current && as > hs)
-
         ) {
-
           stats.wins++
           stats.points += 3
-
         } else {
-
           stats.losses++
-
         }
-
       })
 
     stats.goal_difference =
@@ -331,20 +374,16 @@ export default function App() {
     return stats
 
   }).sort((a, b) =>
-
     b.points - a.points ||
     b.goal_difference - a.goal_difference ||
     b.goals_for - a.goals_for
-
   ).map((team, index) => ({
-
     ...team,
     rank: index + 1
-
   }))
 
+  // جدول الترتيب
   function renderStandings(compact = false) {
-
     if (!teams.length) {
       return <div className="empty-state">{t.empty}</div>
     }
@@ -357,50 +396,36 @@ export default function App() {
     }
 
     return (
-
-      <div style={{
-        width: '100%',
-        overflowX: 'auto'
-      }}>
-
+      <div style={{ width: '100%', overflowX: 'auto' }}>
         <table style={{
           width: '100%',
           minWidth: compact ? '420px' : '650px',
           borderCollapse: 'collapse',
           textAlign: 'center'
         }}>
-
           <thead>
-
             <tr style={{
               borderBottom: '1px solid rgba(255,255,255,0.15)'
             }}>
+              <th>{t.rank}</th>
+              <th style={{ textAlign: 'start' }}>{t.team}</th>
+              <th>{t.played}</th>
+              <th>{t.wins}</th>
+              <th>{t.draws}</th>
+              <th>{t.losses}</th>
 
-              <th style={{ padding: '12px 8px' }}>{t.rank}</th>
-              <th style={{ padding: '12px 8px', textAlign: 'start' }}>{t.team}</th>
-              <th style={{ padding: '12px 8px' }}>{t.played}</th>
-              <th style={{ padding: '12px 8px' }}>{t.wins}</th>
-              <th style={{ padding: '12px 8px' }}>{t.draws}</th>
-              <th style={{ padding: '12px 8px' }}>{t.losses}</th>
+              {!compact && <>
+                <th>{t.goalsFor}</th>
+                <th>{t.goalsAgainst}</th>
+                <th>{t.goalDifference}</th>
+              </>}
 
-              {!compact && (
-                <>
-                  <th style={{ padding: '12px 8px' }}>{t.goalsFor}</th>
-                  <th style={{ padding: '12px 8px' }}>{t.goalsAgainst}</th>
-                  <th style={{ padding: '12px 8px' }}>{t.goalDifference}</th>
-                </>
-              )}
-
-              <th style={{ padding: '12px 8px' }}>{t.points}</th>
-
+              <th>{t.points}</th>
             </tr>
-
           </thead>
 
           <tbody>
-
             {standings.map(team => (
-
               <tr
                 key={team.team_id}
                 style={{
@@ -410,24 +435,23 @@ export default function App() {
                     : 'transparent'
                 }}
               >
-
-                <td style={{ padding: '12px 8px', fontWeight: 'bold' }}>
-                  {team.rank === 1 ? '🥇' : team.rank === 2 ? '🥈' : team.rank === 3 ? '🥉' : team.rank}
+                <td>
+                  {team.rank === 1 ? '🥇' :
+                    team.rank === 2 ? '🥈' :
+                    team.rank === 3 ? '🥉' :
+                    team.rank}
                 </td>
 
                 <td style={{
-                  padding: '12px 8px',
                   textAlign: 'start',
                   fontWeight: '600',
                   whiteSpace: 'nowrap'
                 }}>
-
                   <div style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px'
                   }}>
-
                     {team.logo_url && (
                       <img
                         src={team.logo_url}
@@ -437,11 +461,8 @@ export default function App() {
                         style={{ objectFit: 'contain' }}
                       />
                     )}
-
                     {team.name}
-
                   </div>
-
                 </td>
 
                 <td>{team.played}</td>
@@ -449,48 +470,39 @@ export default function App() {
                 <td>{team.draws}</td>
                 <td>{team.losses}</td>
 
-                {!compact && (
-                  <>
-                    <td>{team.goals_for}</td>
-                    <td>{team.goals_against}</td>
-                    <td>{team.goal_difference > 0 ? `+${team.goal_difference}` : team.goal_difference}</td>
-                  </>
-                )}
+                {!compact && <>
+                  <td>{team.goals_for}</td>
+                  <td>{team.goals_against}</td>
+                  <td>
+                    {team.goal_difference > 0
+                      ? `+${team.goal_difference}`
+                      : team.goal_difference}
+                  </td>
+                </>}
 
                 <td style={{
-                  padding: '12px 8px',
                   fontWeight: 'bold',
                   color: '#d4af37'
                 }}>
                   {team.points}
                 </td>
-
               </tr>
-
             ))}
-
           </tbody>
-
         </table>
-
       </div>
-
     )
-
   }
 
+  // عرض المباريات
   function renderMatches(list) {
-
     if (!list.length) {
       return <div className="empty-state">{t.empty}</div>
     }
 
     return list.map(match => (
-
       <div className="admin-record" key={match.id}>
-
         <div className="admin-record-info">
-
           <strong>
             {teamName(match.home_team_id)}
             {'  '}
@@ -508,25 +520,19 @@ export default function App() {
                 )
               : '—'}
           </small>
-
         </div>
-
       </div>
-
     ))
-
   }
 
+  // عرض الفرق
   function renderTeams() {
-
     if (!teams.length) {
       return <div className="empty-state">{t.empty}</div>
     }
 
     return teams.map(team => (
-
       <div className="admin-record" key={team.id}>
-
         <div className="admin-record-info">
           <strong>{team.name}</strong>
         </div>
@@ -540,22 +546,60 @@ export default function App() {
             style={{ objectFit: 'contain' }}
           />
         )}
-
       </div>
-
     ))
+  }
 
+  // عرض اللاعبين
+  function renderPlayers() {
+    if (!players.length) {
+      return <div className="empty-state">{t.empty}</div>
+    }
+
+    return players.map(player => (
+      <div className="admin-record" key={player.id}>
+        <div className="admin-record-info">
+          <strong>{player.full_name}</strong>
+          <small>
+            {teamName(player.team_id)}
+            {' • '}
+            {player.position || '—'}
+            {' • #'}
+            {player.jersey_number ?? '—'}
+          </small>
+        </div>
+      </div>
+    ))
+  }
+
+  // عرض إحصائيات اللاعبين
+  function renderStats() {
+    if (!playerStats.length) {
+      return <div className="empty-state">{t.empty}</div>
+    }
+
+    return playerStats.map(stat => (
+      <div className="admin-record" key={stat.id}>
+        <div className="admin-record-info">
+          <strong>{playerName(stat.player_id)}</strong>
+          <small>
+            {t.playedMatches}: {stat.appearances ?? 0}
+            {' • '}
+            {t.goals}: {stat.goals ?? 0}
+            {' • '}
+            {t.assists}: {stat.assists ?? 0}
+          </small>
+        </div>
+      </div>
+    ))
   }
 
   return (
-
     <div
       className="app"
       dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
-
       <header className="topbar">
-
         <button
           className="menu-button"
           onClick={() => setMenuOpen(!menuOpen)}
@@ -565,18 +609,14 @@ export default function App() {
         </button>
 
         <div className="brand">
-
           <div className="brand-icon">
             <Trophy size={25} />
           </div>
 
           <div>
-            <h1>
-              BOTOLA <span>FAR</span>
-            </h1>
+            <h1>BOTOLA <span>FAR</span></h1>
             <p>{t.subtitle}</p>
           </div>
-
         </div>
 
         <button
@@ -586,23 +626,18 @@ export default function App() {
           <Globe size={18} />
           {t.language}
         </button>
-
       </header>
 
       <div className="layout">
-
         <aside className={`sidebar ${menuOpen ? 'open' : ''}`}>
-
           <p className="nav-heading">
             {lang === 'ar' ? 'القائمة الرئيسية' : 'MENU PRINCIPAL'}
           </p>
 
           {navigation.map(item => {
-
             const Icon = item.icon
 
             return (
-
               <button
                 key={item.id}
                 className={`nav-item ${
@@ -620,70 +655,55 @@ export default function App() {
                 <Icon size={19} />
                 <span>{item.label}</span>
               </button>
-
             )
-
           })}
 
           <div className="sidebar-footer">
             BOTOLA FAR © 2026
           </div>
-
         </aside>
 
         <main className="main-content">
-
           <div className="page-heading">
-
             <div>
               <span className="eyebrow">BOTOLA FAR</span>
-
               <h2>
                 {active === 'home'
                   ? t.welcome
-                  : navigation.find(
-                      item => item.id === active
-                    )?.label}
+                  : navigation.find(item => item.id === active)?.label}
               </h2>
-
               <p>{t.description}</p>
             </div>
 
             <div className="live-indicator">
               <span></span>
-              {lang === 'ar' ? 'البطولة' : 'Tournoi'}
+              {t.tournament}
             </div>
-
           </div>
 
-          {/* HOME */}
+          {dataError && (
+            <div className="admin-message">
+              {dataError}
+            </div>
+          )}
 
+          {/* الرئيسية */}
           {active === 'home' && (
-
             <div className="dashboard">
-
               <section className="welcome-card">
-
                 <div className="welcome-content">
                   <span className="welcome-tag">
                     FOOTBALL TOURNAMENT
                   </span>
-
                   <h2>BOTOLA FAR</h2>
                   <p>{t.description}</p>
                 </div>
 
-                <Trophy
-                  className="hero-trophy"
-                  size={90}
-                />
-
+                <Trophy className="hero-trophy" size={90} />
               </section>
 
               <div className="section-grid">
-
                 <section className="panel">
-
                   <div className="panel-heading">
                     <Trophy size={19} />
                     <h3>{t.standings}</h3>
@@ -691,13 +711,10 @@ export default function App() {
 
                   {loadingData
                     ? <div className="empty-state">{t.loading}</div>
-                    : renderStandings(true)
-                  }
-
+                    : renderStandings(true)}
                 </section>
 
                 <section className="panel">
-
                   <div className="panel-heading">
                     <CalendarDays size={19} />
                     <h3>{t.latest}</h3>
@@ -706,14 +723,15 @@ export default function App() {
                   {loadingData
                     ? <div className="empty-state">{t.loading}</div>
                     : renderMatches(
-                        matches.filter(m => m.status === 'finished')
-                      )
-                  }
-
+                        matches
+                          .filter(m => m.status === 'finished')
+                          .slice()
+                          .reverse()
+                          .slice(0, 5)
+                      )}
                 </section>
 
                 <section className="panel full-panel">
-
                   <div className="panel-heading">
                     <CalendarDays size={19} />
                     <h3>{t.upcoming}</h3>
@@ -723,123 +741,26 @@ export default function App() {
                     ? <div className="empty-state">{t.loading}</div>
                     : renderMatches(
                         matches.filter(m => m.status === 'scheduled')
-                      )
-                  }
-
+                      )}
                 </section>
-
               </div>
-
             </div>
-
           )}
 
-          {/* ADMIN */}
+          {/* الترتيب */}
+          {active === 'standings' && (
+            <section className="panel">
+              <div className="panel-heading">
+                <Trophy size={19} />
+                <h3>{t.standings}</h3>
+              </div>
 
-          {active === 'admin' && (
+              {loadingData
+                ? <div className="empty-state">{t.loading}</div>
+                : renderStandings(false)}
+            </section>
+          )}
 
-            <div className="dashboard">
-
-              {authLoading ? (
-
-                <section className="panel empty-state">
-                  جاري التحقق من صلاحيات المسؤول...
-                </section>
-
-              ) : !session ? (
-
-                <section className="panel" style={{
-                  maxWidth: '450px',
-                  margin: '30px auto',
-                  padding: '25px'
-                }}>
-
-                  <div className="panel-heading">
-                    <Shield size={22} />
-                    <h3>تسجيل دخول المسؤول</h3>
-                  </div>
-
-                  <form
-                    onSubmit={adminLogin}
-                    style={{
-                      display: 'grid',
-                      gap: '18px',
-                      marginTop: '20px'
-                    }}
-                  >
-
-                    <label className="admin-field">
-                      <span>البريد الإلكتروني</span>
-
-                      <input
-                        type="email"
-                        value={adminEmail}
-                        onChange={e => setAdminEmail(e.target.value)}
-                        placeholder="البريد الإلكتروني"
-                        autoComplete="username"
-                        required
-                      />
-                    </label>
-
-                    <label className="admin-field">
-                      <span>كلمة المرور</span>
-
-                      <input
-                        type="password"
-                        value={adminPassword}
-                        onChange={e => setAdminPassword(e.target.value)}
-                        placeholder="كلمة المرور"
-                        autoComplete="current-password"
-                        required
-                      />
-                    </label>
-
-                    {authMessage && (
-                      <div className="admin-message">
-                        {authMessage}
-                      </div>
-                    )}
-
-                    <button
-                      type="submit"
-                      className="admin-primary"
-                      disabled={authSaving}
-                    >
-                      {authSaving ? 'جاري الدخول...' : 'تسجيل الدخول'}
-                    </button>
-
-                  </form>
-
-                </section>
-
-              ) : !adminAllowed ? (
-
-                <section className="panel" style={{
-                  padding: '25px',
-                  textAlign: 'center'
-                }}>
-
-                  <Shield size={35} />
-
-                  <h3>ليس لديك صلاحية المسؤول</h3>
-
-                  <p>{authMessage}</p>
-
-                  <button
-                    className="admin-primary"
-                    onClick={adminLogout}
-                  >
-                    <LogOut size={17} />
-                    تسجيل الخروج
-                  </button>
-
-                </section>
-
-              ) : (
-
-                <>
-
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'flex-end',
-      
+          {/* المباريات */}
+          {active === 'matches' && (
+            <section classN
