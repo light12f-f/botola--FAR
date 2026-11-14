@@ -1,6 +1,8 @@
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
+import AdminLogin from './AdminLogin.jsx'
 import {
+  
   Trophy, Home, CalendarDays, Users,
   BarChart3, Shield, Globe, Menu
 } from 'lucide-react'
