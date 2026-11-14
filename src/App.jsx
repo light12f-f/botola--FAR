@@ -5,8 +5,7 @@ import {
   BarChart3, Shield, Globe, Menu
 } from 'lucide-react'
 
-import ConnectionTest from './ConnectionTest/ConnectionTest.jsx'
-
+import ConnectionTest from '../ConnectionTest.jsx'
 const translations = {
   ar: {
     home: 'الرئيسية',
