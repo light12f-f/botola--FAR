@@ -1,23 +1,25 @@
 
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap');
 
 :root {
   font-family: 'Inter', 'Cairo', sans-serif;
-  color: #f1f5ff;
-  background: #080f20;
+  color: #edf2fc;
+  background: #05070d;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 
-  --bg: #080f20;
-  --surface: #101a30;
-  --surface-2: #172743;
-  --green: #38bdf8;
-  --green-dark: #2563eb;
-  --text: #f1f5ff;
-  --muted: #91a4c2;
-  --border: #263c5c;
+  --bg: #05070d;
+  --surface: #0a101c;
+  --surface-2: #0e1929;
+  --surface-3: #14243b;
+
+  --green: #3b82f6;
+  --green-dark: #1d4ed8;
+
+  --text: #edf2fc;
+  --muted: #8290a8;
+  --border: #1b2a40;
 }
 
 * {
@@ -34,8 +36,8 @@ html, body, #root {
 body {
   min-width: 320px;
   min-height: 100vh;
-  background: #080f20 !important;
-  color: #f1f5ff;
+  background: #05070d !important;
+  color: #edf2fc !important;
 }
 
 button {
@@ -47,14 +49,15 @@ button {
 .app {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 85% 0%, #1b3762 0%, transparent 38%),
-    linear-gradient(145deg, #080f20, #0c1930) !important;
+    radial-gradient(ellipse at 85% 0%, #14213a 0%, transparent 38%),
+    linear-gradient(145deg, #05070d, #080e19 65%, #0b1423) !important;
+  color: #edf2fc !important;
 }
 
 .topbar {
   height: 76px;
-  background: linear-gradient(100deg, #09152b, #122748, #0b1730) !important;
-  border-bottom: 1px solid #263c5c;
+  background: linear-gradient(100deg, #05080f, #0b1423, #080d18) !important;
+  border-bottom: 1px solid #1b2a40;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -62,8 +65,8 @@ button {
   position: sticky;
   top: 0;
   z-index: 100;
-  backdrop-filter: blur(15px);
-  box-shadow: 0 5px 25px #0005;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 5px 25px #0008;
 }
 
 .brand {
@@ -75,12 +78,12 @@ button {
 .brand-icon {
   width: 43px;
   height: 43px;
-  background: linear-gradient(135deg, #2563eb, #38bdf8) !important;
+  background: linear-gradient(145deg, #172b4b, #2563eb) !important;
   color: white;
   display: grid;
   place-items: center;
   border-radius: 12px;
-  box-shadow: 0 5px 20px #2563eb55;
+  box-shadow: 0 5px 20px #2563eb35;
 }
 
 .brand h1 {
@@ -90,11 +93,11 @@ button {
 }
 
 .brand h1 span {
-  color: #38bdf8 !important;
+  color: #60a5fa !important;
 }
 
 .brand p {
-  color: #91a4c2;
+  color: #8290a8;
   font-size: 11px;
   margin-top: 3px;
 }
@@ -103,16 +106,17 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #172743, #20385b) !important;
+  background: linear-gradient(135deg, #101a2b, #14243b) !important;
   color: white !important;
-  border: 1px solid #365477;
+  border: 1px solid #243751;
   padding: 10px 15px;
   border-radius: 9px;
   font-size: 13px;
+  transition: .25s;
 }
 
 .language-button:hover {
-  border-color: #38bdf8;
+  border-color: #3b82f6;
 }
 
 .menu-button {
@@ -129,8 +133,8 @@ button {
 .sidebar {
   width: 245px;
   flex-shrink: 0;
-  background: linear-gradient(180deg, #0c1931, #091426) !important;
-  border-inline-end: 1px solid #263c5c;
+  background: linear-gradient(180deg, #080d17, #060a12) !important;
+  border-inline-end: 1px solid #1b2a40;
   padding: 28px 16px;
   display: flex;
   flex-direction: column;
@@ -139,7 +143,7 @@ button {
 
 .nav-heading {
   font-size: 11px;
-  color: #8195b5;
+  color: #687a96;
   padding: 0 12px;
   margin-bottom: 12px;
   letter-spacing: 1px;
@@ -151,7 +155,7 @@ button {
   align-items: center;
   gap: 13px;
   text-align: start;
-  color: #a9bad5 !important;
+  color: #9baac0 !important;
   background: transparent !important;
   padding: 13px 14px;
   border-radius: 9px;
@@ -160,21 +164,21 @@ button {
 }
 
 .nav-item:hover {
-  background: #192f50 !important;
+  background: #111e31 !important;
   color: white !important;
 }
 
 .nav-item.active {
-  color: #60d5ff !important;
-  background: linear-gradient(100deg, #173c70, #142b4c) !important;
+  color: #79b4ff !important;
+  background: linear-gradient(100deg, #142744, #101c30) !important;
   font-weight: 700;
-  border-inline-start: 3px solid #38bdf8;
-  box-shadow: inset 0 0 18px #2563eb22;
+  border-inline-start: 3px solid #3b82f6;
+  box-shadow: inset 0 0 18px #2563eb16;
 }
 
 .sidebar-footer {
   margin-top: auto;
-  color: #7185a5;
+  color: #596a84;
   font-size: 11px;
   padding: 20px 12px 0;
 }
@@ -196,7 +200,7 @@ button {
 }
 
 .eyebrow {
-  color: #38bdf8;
+  color: #60a5fa;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 2px;
@@ -205,12 +209,12 @@ button {
 .page-heading h2 {
   font-size: clamp(20px, 3vw, 28px);
   margin: 9px 0;
-  color: white;
+  color: #f1f5fc;
 }
 
 .page-heading p {
   font-size: 13px;
-  color: #91a4c2;
+  color: #8290a8;
   line-height: 1.8;
 }
 
@@ -218,9 +222,9 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #122c4e, #173c61);
-  color: #60d5ff;
-  border: 1px solid #28527c;
+  background: #101d2e !important;
+  color: #60a5fa !important;
+  border: 1px solid #233c5d;
   padding: 9px 14px;
   border-radius: 30px;
   font-size: 12px;
@@ -231,16 +235,16 @@ button {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #38bdf8;
-  box-shadow: 0 0 10px #38bdf8;
+  background: #3b82f6;
+  box-shadow: 0 0 10px #3b82f6;
 }
 
 .welcome-card {
   min-height: 210px;
   background:
-    radial-gradient(circle at 85% 20%, #4b9fff55, transparent 35%),
-    linear-gradient(115deg, #10264a 0%, #173d70 55%, #2563eb 100%) !important;
-  border: 1px solid #38659c;
+    radial-gradient(circle at 85% 20%, #3b82f630, transparent 35%),
+    linear-gradient(115deg, #0b1423 0%, #11233c 55%, #1b3152 100%) !important;
+  border: 1px solid #263d5d;
   border-radius: 17px;
   padding: 35px;
   display: flex;
@@ -248,13 +252,13 @@ button {
   justify-content: space-between;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 15px 40px #02081770;
+  box-shadow: 0 15px 40px #0008;
   transition: .3s ease;
 }
 
 .welcome-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 20px 45px #0005;
+  border-color: #365b8a;
 }
 
 .welcome-content {
@@ -264,7 +268,7 @@ button {
 
 .welcome-tag {
   font-size: 10px;
-  color: #9bdfff;
+  color: #83b9ff;
   letter-spacing: 2px;
   font-weight: 700;
 }
@@ -277,18 +281,18 @@ button {
 }
 
 .welcome-card p {
-  color: #d1e5ff;
+  color: #b5c5dc;
   font-size: 13px;
   max-width: 400px;
   line-height: 1.9;
 }
 
 .hero-trophy {
-  color: #9bdfff;
-  opacity: .45;
+  color: #609af0;
+  opacity: .32;
   flex-shrink: 0;
   margin-inline: 25px;
-  filter: drop-shadow(0 0 20px #38bdf855);
+  filter: drop-shadow(0 0 20px #2563eb35);
 }
 
 .section-grid {
@@ -299,18 +303,19 @@ button {
 }
 
 .panel {
-  background: linear-gradient(145deg, #172943, #101a30 75%) !important;
-  border: 1px solid #293e5d;
-  border-radius: 14px;
+  background: linear-gradient(145deg, #101a2b, #0a101c 80%) !important;
+  border: 1px solid #1b2a40;
+  border-radius: 13px;
   padding: 20px;
   min-width: 0;
-  box-shadow: 0 8px 25px #0003;
+  box-shadow: 0 8px 25px #0005;
   transition: .25s;
 }
 
 .panel:hover {
-  border-color: #3b6797;
+  border-color: #2c4770;
   transform: translateY(-2px);
+  box-shadow: 0 12px 30px #0006;
 }
 
 .panel-heading {
@@ -318,24 +323,24 @@ button {
   align-items: center;
   gap: 10px;
   padding-bottom: 17px;
-  border-bottom: 1px solid #293e5d;
+  border-bottom: 1px solid #1b2a40;
 }
 
 .panel-heading svg {
-  color: #38bdf8;
+  color: #60a5fa;
 }
 
 .panel-heading h3 {
   font-size: 15px;
   font-weight: 700;
-  color: #eaf2ff;
+  color: #eaf0fc;
 }
 
 .empty-state {
   min-height: 115px;
   display: grid;
   place-items: center;
-  color: #91a4c2;
+  color: #8290a8;
   font-size: 13px;
 }
 
@@ -349,7 +354,7 @@ button {
 
 .footer {
   text-align: center;
-  color: #7185a5;
+  color: #596a84;
   font-size: 11px;
   padding: 35px 10px 15px;
 }
@@ -359,16 +364,16 @@ button {
 }
 
 ::-webkit-scrollbar-track {
-  background: #080f20;
+  background: #05070d;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(#2563eb, #38bdf8);
+  background: linear-gradient(#172b4b, #2563eb);
   border-radius: 10px;
 }
 
 button:focus-visible {
-  outline: 2px solid #38bdf8;
+  outline: 2px solid #60a5fa;
   outline-offset: 3px;
 }
 
@@ -426,7 +431,7 @@ button:focus-visible {
     z-index: 90;
     transform: translateX(110%);
     transition: transform .25s ease;
-    box-shadow: 0 10px 30px #0008;
+    box-shadow: 0 10px 30px #0009;
   }
 
   [dir="ltr"] .sidebar {
