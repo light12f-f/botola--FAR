@@ -1,1 +1,505 @@
 
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Cairo:wght@400;500;600;700;800&display=swap');
+
+:root {
+  font-family: 'Inter', 'Cairo', sans-serif;
+  color: #f1f5ff;
+  background: #080f20;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+
+  --bg: #080f20;
+  --surface: #101a30;
+  --surface-2: #172743;
+  --green: #38bdf8;
+  --green-dark: #2563eb;
+  --text: #f1f5ff;
+  --muted: #91a4c2;
+  --border: #263c5c;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  min-height: 100%;
+  width: 100%;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  background: #080f20 !important;
+  color: #f1f5ff;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+.app {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse at 85% 0%, #1b3762 0%, transparent 38%),
+    linear-gradient(145deg, #080f20, #0c1930) !important;
+}
+
+.topbar {
+  height: 76px;
+  background: linear-gradient(100deg, #09152b, #122748, #0b1730) !important;
+  border-bottom: 1px solid #263c5c;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 5%;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(15px);
+  box-shadow: 0 5px 25px #0005;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.brand-icon {
+  width: 43px;
+  height: 43px;
+  background: linear-gradient(135deg, #2563eb, #38bdf8) !important;
+  color: white;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  box-shadow: 0 5px 20px #2563eb55;
+}
+
+.brand h1 {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.brand h1 span {
+  color: #38bdf8 !important;
+}
+
+.brand p {
+  color: #91a4c2;
+  font-size: 11px;
+  margin-top: 3px;
+}
+
+.language-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #172743, #20385b) !important;
+  color: white !important;
+  border: 1px solid #365477;
+  padding: 10px 15px;
+  border-radius: 9px;
+  font-size: 13px;
+}
+
+.language-button:hover {
+  border-color: #38bdf8;
+}
+
+.menu-button {
+  display: none;
+  background: transparent;
+  color: white;
+}
+
+.layout {
+  display: flex;
+  min-height: calc(100vh - 76px);
+}
+
+.sidebar {
+  width: 245px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #0c1931, #091426) !important;
+  border-inline-end: 1px solid #263c5c;
+  padding: 28px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-heading {
+  font-size: 11px;
+  color: #8195b5;
+  padding: 0 12px;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.nav-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  text-align: start;
+  color: #a9bad5 !important;
+  background: transparent !important;
+  padding: 13px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+  transition: .25s;
+}
+
+.nav-item:hover {
+  background: #192f50 !important;
+  color: white !important;
+}
+
+.nav-item.active {
+  color: #60d5ff !important;
+  background: linear-gradient(100deg, #173c70, #142b4c) !important;
+  font-weight: 700;
+  border-inline-start: 3px solid #38bdf8;
+  box-shadow: inset 0 0 18px #2563eb22;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  color: #7185a5;
+  font-size: 11px;
+  padding: 20px 12px 0;
+}
+
+.main-content {
+  flex: 1;
+  min-width: 0;
+  padding: 35px 4%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.page-heading h2 {
+  font-size: clamp(20px, 3vw, 28px);
+  margin: 9px 0;
+  color: white;
+}
+
+.page-heading p {
+  font-size: 13px;
+  color: #91a4c2;
+  line-height: 1.8;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #122c4e, #173c61);
+  color: #60d5ff;
+  border: 1px solid #28527c;
+  padding: 9px 14px;
+  border-radius: 30px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.live-indicator span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38bdf8;
+  box-shadow: 0 0 10px #38bdf8;
+}
+
+.welcome-card {
+  min-height: 210px;
+  background:
+    radial-gradient(circle at 85% 20%, #4b9fff55, transparent 35%),
+    linear-gradient(115deg, #10264a 0%, #173d70 55%, #2563eb 100%) !important;
+  border: 1px solid #38659c;
+  border-radius: 17px;
+  padding: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 15px 40px #02081770;
+  transition: .3s ease;
+}
+
+.welcome-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 45px #0005;
+}
+
+.welcome-content {
+  position: relative;
+  z-index: 2;
+}
+
+.welcome-tag {
+  font-size: 10px;
+  color: #9bdfff;
+  letter-spacing: 2px;
+  font-weight: 700;
+}
+
+.welcome-card h2 {
+  font-size: clamp(30px, 5vw, 45px);
+  font-weight: 800;
+  margin: 14px 0 10px;
+  color: white;
+}
+
+.welcome-card p {
+  color: #d1e5ff;
+  font-size: 13px;
+  max-width: 400px;
+  line-height: 1.9;
+}
+
+.hero-trophy {
+  color: #9bdfff;
+  opacity: .45;
+  flex-shrink: 0;
+  margin-inline: 25px;
+  filter: drop-shadow(0 0 20px #38bdf855);
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.panel {
+  background: linear-gradient(145deg, #172943, #101a30 75%) !important;
+  border: 1px solid #293e5d;
+  border-radius: 14px;
+  padding: 20px;
+  min-width: 0;
+  box-shadow: 0 8px 25px #0003;
+  transition: .25s;
+}
+
+.panel:hover {
+  border-color: #3b6797;
+  transform: translateY(-2px);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 17px;
+  border-bottom: 1px solid #293e5d;
+}
+
+.panel-heading svg {
+  color: #38bdf8;
+}
+
+.panel-heading h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #eaf2ff;
+}
+
+.empty-state {
+  min-height: 115px;
+  display: grid;
+  place-items: center;
+  color: #91a4c2;
+  font-size: 13px;
+}
+
+.full-panel {
+  grid-column: 1 / -1;
+}
+
+.page-panel {
+  min-height: 300px;
+}
+
+.footer {
+  text-align: center;
+  color: #7185a5;
+  font-size: 11px;
+  padding: 35px 10px 15px;
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #080f20;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(#2563eb, #38bdf8);
+  border-radius: 10px;
+}
+
+button:focus-visible {
+  outline: 2px solid #38bdf8;
+  outline-offset: 3px;
+}
+
+@media (max-width: 850px) {
+  .sidebar {
+    width: 210px;
+  }
+
+  .main-content {
+    padding: 28px 3%;
+  }
+}
+
+@media (max-width: 650px) {
+  .topbar {
+    height: 65px;
+    padding: 0 15px;
+    gap: 12px;
+  }
+
+  .menu-button {
+    display: grid;
+    place-items: center;
+  }
+
+  .brand {
+    margin-inline-end: auto;
+    gap: 8px;
+  }
+
+  .brand-icon {
+    width: 37px;
+    height: 37px;
+  }
+
+  .brand h1 {
+    font-size: 16px;
+  }
+
+  .brand p {
+    font-size: 9px;
+  }
+
+  .language-button {
+    padding: 9px 10px;
+    font-size: 11px;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 65px;
+    bottom: 0;
+    inset-inline-start: 0;
+    width: 255px;
+    z-index: 90;
+    transform: translateX(110%);
+    transition: transform .25s ease;
+    box-shadow: 0 10px 30px #0008;
+  }
+
+  [dir="ltr"] .sidebar {
+    transform: translateX(-110%);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    padding: 25px 15px;
+  }
+
+  .page-heading {
+    align-items: flex-start;
+  }
+
+  .page-heading h2 {
+    font-size: 20px;
+  }
+
+  .page-heading p {
+    font-size: 12px;
+  }
+
+  .welcome-card {
+    min-height: 180px;
+    padding: 23px 18px;
+  }
+
+  .welcome-card h2 {
+    font-size: 30px;
+  }
+
+  .welcome-card p {
+    font-size: 11px;
+  }
+
+  .hero-trophy {
+    width: 55px;
+    margin-inline: 0;
+  }
+
+  .section-grid {
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .full-panel {
+    grid-column: auto;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .footer {
+    padding-top: 25px;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand p {
+    display: none;
+  }
+
+  .language-button {
+    gap: 5px;
+    padding: 8px;
+  }
+
+  .welcome-card h2 {
+    font-size: 25px;
+  }
+  }
